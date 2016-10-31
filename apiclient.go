@@ -38,9 +38,8 @@ func NewApiClient() (*ApiClient, error) {
 	return &ApiClient{usr: usr, pwd: pwd, uri: ehuri, cli: &http.Client{}}, nil
 }
 
-func (ac *ApiClient) Get(slug string) (*json.Decoder, error) {
-	fmt.Printf("entering GET\n")
-	uri := ac.uri + slug
+func (ac *ApiClient) Get(endpoint string) (*json.Decoder, error) {
+	uri := ac.uri + endpoint
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
 		return &json.Decoder{}, err
@@ -57,43 +56,22 @@ func (ac *ApiClient) Get(slug string) (*json.Decoder, error) {
 	return json.NewDecoder(buf), nil
 }
 
-func (ac *ApiClient) GetHosts() (*[]Host, error) {
-	dec, err := ac.Get("hosts/info/full")
+func (ac *ApiClient) GetEndpoint(endpoint string) (*[]map[string]interface{}, error) {
+	dec, err := ac.Get(endpoint)
 	if err != nil {
 		return nil, err
 	}
-	var hosts []Host
-	var h Host
-	_, err = dec.Token()
-	for dec.More() {
-		if err = dec.Decode(&h); err != nil {
-			return nil, err
-		}
-		hosts = append(hosts, h)
-	}
-	return &hosts, nil
-}
-
-func (ac *ApiClient) GetServers() (*[]Server, error) {
-	dec, err := ac.Get("servers/info/full")
-	if err != nil {
+	if _, err = dec.Token(); err != nil {
 		return nil, err
 	}
-	// var servers []Server
-	// var s Server
-	// var s interface{}
-	_, err = dec.Token()
+	var objs []map[string]interface{}
 	for dec.More() {
-		var s map[string]interface{}
-		if err = dec.Decode(&s); err != nil {
+		var obj map[string]interface{}
+		if err = dec.Decode(&obj); err != nil {
 			return nil, err
 		}
-		fmt.Printf("name %s\n", s["name"])
-		fmt.Printf("cores %s\n", s["smp:cores"])
-		// fmt.Printf("server %s\n", s)
-
-		// servers = append(servers, s)
+		objs = append(objs, obj)
 	}
-	//return &servers, nil
-	return nil, nil
+
+	return &objs, nil
 }

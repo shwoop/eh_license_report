@@ -14,13 +14,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error %s\n", err)
 		os.Exit(1)
 	}
-	hosts, err := api.GetHosts()
+	hosts, err := api.GetEndpoint("hosts/info/full")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error %s\n", err)
 		os.Exit(1)
 	}
 	fmt.Printf("hosts are %s", hosts)
-	servers, err := api.GetServers()
+	servers, err := api.GetEndpoint("servers/info/full")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error %s\n", err)
 		os.Exit(1)
