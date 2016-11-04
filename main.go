@@ -9,21 +9,36 @@ import (
 )
 
 func main() {
+	// get our api query object
 	api, err := NewApiClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error %s\n", err)
 		os.Exit(1)
 	}
-	hosts, err := api.GetEndpoint("hosts/info/full")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error %s\n", err)
-		os.Exit(1)
+
+	// query the api for our drives, hosts, and servers
+	cDrive := make(chan *[]Drive)
+	cHost := make(chan *[]Host)
+	cServer := make(chan *[]Server)
+	go api.GoGetDrives(cDrive)
+	go api.GoGetHosts(cHost)
+	go api.GoGetServers(cServer)
+	drives, hosts, servers := <-cDrive, <-cHost, <-cServer
+	fmt.Printf("goDrives are %s\n", drives)
+	fmt.Printf("goHosts are %s\n", hosts)
+	fmt.Printf("goServers are %s\n", servers)
+
+	// populate report
+	licenses := &[]string{
+		"msft_lwa_00135",
+		"msft_p73_04837",
+		"msft_p72_04169",
+		"msft_p72_04169",
+		"msft_6wc_00002",
+		"msft_tfa_00009",
+		"msft_228_03159",
+		"cpanel_vps_1m",
 	}
-	fmt.Printf("hosts are %s", hosts)
-	servers, err := api.GetEndpoint("servers/info/full")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error %s\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("first server is %s", servers)
+	r := NewReport(licenses, hosts)
+	fmt.Printf("New report bitches: %s", r)
 }

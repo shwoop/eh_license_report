@@ -56,7 +56,112 @@ func (ac *ApiClient) Get(endpoint string) (*json.Decoder, error) {
 	return json.NewDecoder(buf), nil
 }
 
-func (ac *ApiClient) GetEndpoint(endpoint string) (*[]map[string]interface{}, error) {
+func (ac *ApiClient) GetHosts() (*[]Host, error) {
+	dec, err := ac.Get("hosts/info/full")
+	if err != nil {
+		return nil, err
+	}
+	var hosts []Host
+	_, err = dec.Token()
+	for dec.More() {
+		var h Host
+		if err = dec.Decode(&h); err != nil {
+			return nil, err
+		}
+		hosts = append(hosts, h)
+	}
+	return &hosts, nil
+}
+
+func (ac *ApiClient) GoGetHosts(c chan *[]Host) {
+	hosts, err := ac.GetHosts()
+	if err != nil {
+		c <- nil
+	} else {
+		c <- hosts
+	}
+	close(c)
+}
+
+func (ac *ApiClient) GetDrives() (*[]Drive, error) {
+	dec, err := ac.Get("drives/info/full")
+	if err != nil {
+		return nil, err
+	}
+	var drives []Drive
+	_, err = dec.Token()
+	for dec.More() {
+		var d Drive
+		if err = dec.Decode(&d); err != nil {
+			return nil, err
+		}
+		drives = append(drives, d)
+	}
+	return &drives, nil
+}
+
+func (ac *ApiClient) GoGetDrives(c chan *[]Drive) {
+	drives, err := ac.GetDrives()
+	if err != nil {
+		c <- nil
+	} else {
+		c <- drives
+	}
+	close(c)
+}
+
+func (ac *ApiClient) GetServers() (*[]Server, error) {
+	objs, err := ac.GetEndpoint("servers/info/full")
+	if err != nil {
+		return nil, err
+	}
+	var drives []string
+	var servers []Server
+	for _, v := range *objs {
+		// if v["type"] != "vm" || v["status"] != "active" {
+		// 	continue
+		// }
+		for key := range v {
+			switch str := fmt.Sprint(v["key"]); true {
+			case strings.HasPrefix(key, "ide") && TestUuid(str):
+				drives = append(drives, str)
+			case strings.HasPrefix(key, "block") && TestUuid(str):
+				drives = append(drives, str)
+			case strings.HasPrefix(key, "ata") && TestUuid(str):
+				drives = append(drives, str)
+			case strings.HasPrefix(key, "scsi") && TestUuid(str):
+				drives = append(drives, str)
+			}
+		}
+		cores, _ := ToInt(v["smp:cores"])
+		servers = append(
+			servers,
+			Server{
+				Server: fmt.Sprint(v["server"]),
+				Host:   fmt.Sprint(v["host"]),
+				Cores:  cores,
+				Drives: drives,
+			},
+		)
+		drives = nil
+	}
+	return &servers, err
+}
+
+func (ac *ApiClient) GoGetServers(c chan *[]Server) {
+	servers, err := ac.GetServers()
+	if err != nil {
+		c <- nil
+	} else {
+		c <- servers
+	}
+	close(c)
+}
+
+func (ac *ApiClient) GetEndpoint(endpoint string) (
+	*[]map[string]interface{},
+	error,
+) {
 	dec, err := ac.Get(endpoint)
 	if err != nil {
 		return nil, err
@@ -74,4 +179,17 @@ func (ac *ApiClient) GetEndpoint(endpoint string) (*[]map[string]interface{}, er
 	}
 
 	return &objs, nil
+}
+
+func (ac *ApiClient) GoGetEndpoint(
+	endpoint string,
+	c chan *[]map[string]interface{},
+) {
+	objs, err := ac.GetEndpoint(endpoint)
+	if err != nil {
+		c <- nil
+	} else {
+		c <- objs
+	}
+	close(c)
 }
