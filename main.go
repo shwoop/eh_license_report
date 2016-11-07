@@ -22,9 +22,9 @@ func main() {
 	go api.GoGetHosts(cHost)
 	go api.GoGetServers(cServer)
 	drives, hosts, servers := <-cDrive, <-cHost, <-cServer
-	fmt.Printf("goDrives are %s\n", drives)
-	fmt.Printf("goHosts are %s\n", hosts)
-	fmt.Printf("goServers are %s\n", servers)
+	// fmt.Printf("goDrives are %s\n", drives)
+	// fmt.Printf("goHosts are %s\n", hosts)
+	// fmt.Printf("goServers are %s\n", servers)
 
 	drivesMap := make(map[string]string)
 	for _, d := range *drives {
@@ -43,12 +43,12 @@ func main() {
 		"cpanel_vps_1m",
 	}
 	r := NewReport(licenses, hosts)
-	r.UpdateHost("msft_lwa_00135", "b1f65f29-d5d5-4b51-9cc8-dd7fa3434fa5", 1)
+	// r.UpdateHost("msft_lwa_00135", "b1f65f29-d5d5-4b51-9cc8-dd7fa3434fa5", 1)
 
-	fmt.Printf("\n\n")
+	// fmt.Printf("\n\n")
 	for _, s := range *servers {
-		for d, dl := range drivesMap {
-			fmt.Printf("server %s, found drive %s, with licenses %s\n", s.Server, d, dl)
+		for _, dl := range drivesMap {
+			// fmt.Printf("server %s, found drive %s, with licenses %s\n", s.Server, d, dl)
 			if dl == "" {
 				continue
 			}
@@ -57,4 +57,5 @@ func main() {
 			}
 		}
 	}
+	r.PrintReport()
 }

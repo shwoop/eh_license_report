@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type ReportHost struct {
 	Host            string
 	Cores           int
@@ -34,7 +36,6 @@ func (r *Report) sqlRounding(c int) int {
 	return c
 }
 
-// TODO:  UpdateHost (license, host, serverno, vcoreno, ...
 func (r *Report) UpdateHost(l, h string, c int) {
 	rh := r.Licenses[l][h]
 	rh.Servers++
@@ -43,5 +44,21 @@ func (r *Report) UpdateHost(l, h string, c int) {
 	r.Licenses[l][h] = rh
 }
 
-// TODO:  PrintReport
+func (r *Report) PrintReport() {
+	fmt.Println("license,host,cores,vcores,servers,sql_adjusted\n")
+	for license, reportHost := range r.Licenses {
+		for _, host := range reportHost {
+			fmt.Printf(
+				"%s,%s,%d,%d,%d,%d\n",
+				license,
+				host.Host,
+				host.Cores,
+				host.Vcores,
+				host.Servers,
+				host.SqlRoundedCores,
+			)
+		}
+	}
+}
+
 // TODO:  Csv lib
