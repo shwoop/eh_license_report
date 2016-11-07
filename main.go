@@ -57,5 +57,5 @@ func main() {
 			}
 		}
 	}
-	r.PrintReport()
+	r.PrintReport(nil)
 }
