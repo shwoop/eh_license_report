@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	// 	"io"
-	// 	"net/http"
 	"os"
-	// 	"strings"
+	"strings"
 )
 
 func main() {
@@ -28,6 +26,11 @@ func main() {
 	fmt.Printf("goHosts are %s\n", hosts)
 	fmt.Printf("goServers are %s\n", servers)
 
+	drivesMap := make(map[string]string)
+	for _, d := range *drives {
+		drivesMap[d.Drive] = d.Licenses
+	}
+
 	// populate report
 	licenses := &[]string{
 		"msft_lwa_00135",
@@ -40,5 +43,18 @@ func main() {
 		"cpanel_vps_1m",
 	}
 	r := NewReport(licenses, hosts)
-	fmt.Printf("New report bitches: %s", r)
+	r.UpdateHost("msft_lwa_00135", "b1f65f29-d5d5-4b51-9cc8-dd7fa3434fa5", 1)
+
+	fmt.Printf("\n\n")
+	for _, s := range *servers {
+		for d, dl := range drivesMap {
+			fmt.Printf("server %s, found drive %s, with licenses %s\n", s.Server, d, dl)
+			if dl == "" {
+				continue
+			}
+			for _, driveLicense := range strings.Split(dl, " ") {
+				r.UpdateHost(driveLicense, s.Host, s.Cores)
+			}
+		}
+	}
 }
