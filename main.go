@@ -43,19 +43,17 @@ func main() {
 		"cpanel_vps_1m",
 	}
 	r := NewReport(licenses, hosts)
-	// r.UpdateHost("msft_lwa_00135", "b1f65f29-d5d5-4b51-9cc8-dd7fa3434fa5", 1)
 
 	// fmt.Printf("\n\n")
 	for _, s := range *servers {
-		for _, dl := range drivesMap {
-			// fmt.Printf("server %s, found drive %s, with licenses %s\n", s.Server, d, dl)
-			if dl == "" {
+		for _, dm := range drivesMap {
+			if dm == "" {
 				continue
 			}
-			for _, driveLicense := range strings.Split(dl, " ") {
-				r.UpdateHost(driveLicense, s.Host, s.Cores)
+			for _, dl := range strings.Split(dm, " ") {
+				r.UpdateHost(dl, s.Host, s.Cores)
 			}
 		}
 	}
-	r.PrintReport(nil)
+	r.PrintReport("fuckity.csv")
 }

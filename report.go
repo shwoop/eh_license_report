@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type ReportHost struct {
@@ -11,6 +12,7 @@ type ReportHost struct {
 	Cores           int
 	Vcores          int
 	Servers         int
+	Licenses        int
 	SqlRoundedCores int
 }
 
@@ -24,7 +26,7 @@ func NewReport(licenses *[]string, hosts *[]Host) *Report {
 	for _, l := range *licenses {
 		emptyHosts := make(map[string]ReportHost)
 		for _, h := range *hosts {
-			emptyHosts[h.Host] = ReportHost{h.Host, h.Cores, 0, 0, 0}
+			emptyHosts[h.Host] = ReportHost{h.Host, h.Cores, 0, 0, 0, 0}
 		}
 		r.Licenses[l] = emptyHosts
 	}
@@ -41,64 +43,62 @@ func (r *Report) sqlRounding(c int) int {
 }
 
 func (r *Report) UpdateHost(l, h string, c int) {
+	sl := strings.Split(l, ":")
+	l = sl[0]
+	ln := 1
+	if len(sl) > 1 {
+		ln, _ = ToInt(sl[1])
+	}
 	rh := r.Licenses[l][h]
 	rh.Servers++
+	rh.Licenses += ln
 	rh.Vcores += c
 	rh.SqlRoundedCores += r.sqlRounding(c)
 	r.Licenses[l][h] = rh
 }
 
 func stdOutput(line string) {
-	fmt.Printf(line)
+	fmt.Println(line)
 }
 
 func makeCsvOutput(filename string) (func(string), func()) {
 	file, _ := os.Create(filename)
 	writer := csv.NewWriter(file)
 	return func(line string) {
-			writer.Write([]string{line})
+			err := writer.Write(strings.Split(line, ","))
+			if err != nil {
+				fmt.Println("got error:", err)
+			}
 		}, func() {
-			file.Close()
 			writer.Flush()
+			file.Close()
 		}
 }
 
-func (r *Report) PrintReport(filename *string) {
+func (r *Report) PrintReport(filename string) {
 	var closer func()
 	var output func(string)
-	if filename == nil {
+	if filename == "" {
 		output = stdOutput
-		closer = nil
+		closer = func() {}
 	} else {
-		output, closer = makeCsvOutput(*filename)
+		output, closer = makeCsvOutput(filename)
 	}
-	// 	fmt.Println("license,host,cores,vcores,servers,sql_adjusted\n")
-	output("license,host,cores,vcores,servers,sql_adjusted\n")
+	defer closer()
+
+	output("license,host,cores,vcores,servers,licenses,sql_adjusted")
 	for license, reportHost := range r.Licenses {
 		for _, host := range reportHost {
 			output(fmt.Sprintf(
-				"%s,%s,%d,%d,%d,%d\n",
+				"%s,%s,%d,%d,%d,%d,%d",
 				license,
 				host.Host,
 				host.Cores,
 				host.Vcores,
 				host.Servers,
+				host.Licenses,
 				host.SqlRoundedCores,
 			))
-			// fmt.Printf(
-			// 	"%s,%s,%d,%d,%d,%d\n",
-			// 	license,
-			// 	host.Host,
-			// 	host.Cores,
-			// 	host.Vcores,
-			// 	host.Servers,
-			// 	host.SqlRoundedCores,
-			// )
 		}
 	}
-	if closer != nil {
-		closer()
-	}
 }
-
-// TODO:  Csv lib

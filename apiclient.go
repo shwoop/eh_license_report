@@ -118,9 +118,9 @@ func (ac *ApiClient) GetServers() (*[]Server, error) {
 	var drives []string
 	var servers []Server
 	for _, v := range *objs {
-		// if v["type"] != "vm" || v["status"] != "active" {
-		// 	continue
-		// }
+		if v["type"] != "vm" || v["status"] != "active" {
+			continue
+		}
 		for key := range v {
 			switch str := fmt.Sprint(v["key"]); true {
 			case strings.HasPrefix(key, "ide") && TestUuid(str):
