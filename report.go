@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -17,67 +18,70 @@ type ReportHost struct {
 }
 
 type Report struct {
-	Licenses map[string]map[string]ReportHost
+	// map[LICENSES]map[HOST]ReportHost
+	Report map[string]map[string]ReportHost
 }
 
 func NewReport(licenses *[]string, hosts *[]Host) *Report {
 	r := Report{}
-	r.Licenses = make(map[string]map[string]ReportHost)
+	r.Report = make(map[string]map[string]ReportHost)
 	for _, l := range *licenses {
 		emptyHosts := make(map[string]ReportHost)
 		for _, h := range *hosts {
 			emptyHosts[h.Host] = ReportHost{h.Host, h.Cores, 0, 0, 0, 0}
 		}
-		r.Licenses[l] = emptyHosts
+		r.Report[l] = emptyHosts
 	}
 	return &r
 }
 
-func (r *Report) sqlRounding(c int) int {
-	if c < 4 {
+func (r *Report) sqlRounding(x int) int {
+	if x < 4 {
 		return 4
-	} else if c%2 == 1 {
-		return c + 1
+	} else if x%2 == 1 {
+		return x + 1
 	}
-	return c
+	return x
 }
 
-func (r *Report) UpdateHost(l, h string, c int) {
-	sl := strings.Split(l, ":")
-	l = sl[0]
-	ln := 1
+func (r *Report) UpdateHost(license, host string, cores int) {
+	sl := strings.Split(license, ":")
+	license = sl[0]
+	licenseCnt := 1
 	if len(sl) > 1 {
-		ln, _ = ToInt(sl[1])
+		licenseCnt, _ = strconv.Atoi(sl[1])
 	}
-	rh := r.Licenses[l][h]
+	rh := r.Report[license][host]
 	rh.Servers++
-	rh.Licenses += ln
-	rh.Vcores += c
-	rh.SqlRoundedCores += r.sqlRounding(c)
-	r.Licenses[l][h] = rh
+	rh.Licenses += licenseCnt
+	rh.Vcores += cores
+	rh.SqlRoundedCores += r.sqlRounding(cores)
+	r.Report[license][host] = rh
 }
 
-func stdOutput(line string) {
-	fmt.Println(line)
+func stdOutput(line []string) {
+	fmt.Println(strings.Join(line, ", "))
 }
 
-func makeCsvOutput(filename string) (func(string), func()) {
+func makeCsvOutput(filename string) (output func([]string), closer func()) {
 	file, _ := os.Create(filename)
 	writer := csv.NewWriter(file)
-	return func(line string) {
-			err := writer.Write(strings.Split(line, ","))
-			if err != nil {
-				fmt.Println("got error:", err)
-			}
-		}, func() {
-			writer.Flush()
-			file.Close()
+	output = func(line []string) {
+		err := writer.Write(line)
+		if err != nil {
+			fmt.Printf("Writer had error: %s", err)
 		}
+	}
+	closer = func() {
+		writer.Flush()
+		file.Close()
+	}
+	return
 }
 
 func (r *Report) PrintReport(filename string) {
 	var closer func()
-	var output func(string)
+	var output func([]string)
 	if filename == "" {
 		output = stdOutput
 		closer = func() {}
@@ -86,19 +90,42 @@ func (r *Report) PrintReport(filename string) {
 	}
 	defer closer()
 
-	output("license,host,cores,vcores,servers,licenses,sql_adjusted")
-	for license, reportHost := range r.Licenses {
+	output([]string{
+		"license",
+		"host",
+		"cores",
+		"vcores",
+		"servers",
+		"licenses",
+		"sql_adjusted",
+	})
+	for license, reportHost := range r.Report {
 		for _, host := range reportHost {
-			output(fmt.Sprintf(
-				"%s,%s,%d,%d,%d,%d,%d",
+			output([]string{
 				license,
 				host.Host,
-				host.Cores,
-				host.Vcores,
-				host.Servers,
-				host.Licenses,
-				host.SqlRoundedCores,
-			))
+				strconv.Itoa(host.Cores),
+				strconv.Itoa(host.Vcores),
+				strconv.Itoa(host.Servers),
+				strconv.Itoa(host.Licenses),
+				strconv.Itoa(host.SqlRoundedCores),
+			})
+		}
+	}
+}
+
+func (r *Report) PopulateReport(
+	servers *[]Server,
+	driveLicenses *map[string]string,
+) {
+	for _, s := range *servers {
+		for _, dl := range *driveLicenses {
+			if dl == "" {
+				continue
+			}
+			for _, l := range strings.Split(dl, " ") {
+				r.UpdateHost(l, s.Host, s.Cores)
+			}
 		}
 	}
 }

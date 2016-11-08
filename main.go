@@ -1,12 +1,16 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func main() {
+	fileName := flag.String("f", "", "csv filename rather than stdout")
+	flag.Parse()
+	fmt.Println("filename: ", *fileName)
+
 	// get our api query object
 	api, err := NewApiClient()
 	if err != nil {
@@ -22,16 +26,14 @@ func main() {
 	go api.GoGetHosts(cHost)
 	go api.GoGetServers(cServer)
 	drives, hosts, servers := <-cDrive, <-cHost, <-cServer
-	// fmt.Printf("goDrives are %s\n", drives)
-	// fmt.Printf("goHosts are %s\n", hosts)
-	// fmt.Printf("goServers are %s\n", servers)
 
-	drivesMap := make(map[string]string)
+	// Pack slice of drives into Drive-License map
+	driveLicenses := make(map[string]string)
 	for _, d := range *drives {
-		drivesMap[d.Drive] = d.Licenses
+		driveLicenses[d.Drive] = d.Licenses
 	}
 
-	// populate report
+	// Populate report
 	licenses := &[]string{
 		"msft_lwa_00135",
 		"msft_p73_04837",
@@ -43,17 +45,6 @@ func main() {
 		"cpanel_vps_1m",
 	}
 	r := NewReport(licenses, hosts)
-
-	// fmt.Printf("\n\n")
-	for _, s := range *servers {
-		for _, dm := range drivesMap {
-			if dm == "" {
-				continue
-			}
-			for _, dl := range strings.Split(dm, " ") {
-				r.UpdateHost(dl, s.Host, s.Cores)
-			}
-		}
-	}
-	r.PrintReport("fuckity.csv")
+	r.PopulateReport(servers, &driveLicenses)
+	r.PrintReport(*fileName)
 }
