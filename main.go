@@ -9,7 +9,6 @@ import (
 func main() {
 	fileName := flag.String("f", "", "csv filename rather than stdout")
 	flag.Parse()
-	fmt.Println("filename: ", *fileName)
 
 	// get our api query object
 	api, err := NewApiClient()
