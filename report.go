@@ -52,11 +52,11 @@ func (r *Report) UpdateHost(license, host string, cores int) {
 		licenseCnt, _ = strconv.Atoi(sl[1])
 	}
 	if _, ok := r.Report[license]; !ok {
-		fmt.Println("Error: Unknown license encountered: ", license)
+		fmt.Fprintf(os.Stderr, "Error: Unknown license encountered: ", license)
 		return
 	}
 	if _, ok := r.Report[license][host]; !ok {
-		fmt.Println("Error: Unknown host encountered: ", host)
+		fmt.Fprintf(os.Stderr, "Error: Unknown host encountered: ", host)
 		return
 	}
 	rh := r.Report[license][host]
