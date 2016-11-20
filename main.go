@@ -43,6 +43,7 @@ func main() {
 		"msft_tfa_00009",
 		"msft_228_03159",
 		"cpanel_vps_1m",
+		"msft_p73_04837_2012std",
 	}
 	r := NewReport(licenses, hosts)
 	r.PopulateReport(servers, &driveLicenses)
