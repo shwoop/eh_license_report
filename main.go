@@ -25,6 +25,13 @@ func main() {
 	go api.GoGetHosts(cHost)
 	go api.GoGetServers(cServer)
 	drives, hosts, servers := <-cDrive, <-cHost, <-cServer
+	if drives == nil || hosts == nil || servers == nil {
+		fmt.Fprintf(
+			os.Stderr,
+			"Error retreiving data.\nPlease check your EHAUTH.\n",
+		)
+		os.Exit(1)
+	}
 
 	// Pack slice of drives into Drive-License map
 	driveLicenses := make(map[string]string)
