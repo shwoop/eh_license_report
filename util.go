@@ -7,7 +7,7 @@ import (
 
 func ValidateUuid(v string) bool {
 	match, err := regexp.MatchString(
-		"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", v,
+		"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$", v,
 	)
 	if err != nil {
 		return false

@@ -122,7 +122,7 @@ func (ac *ApiClient) GetServers() (*[]Server, error) {
 			continue
 		}
 		for key := range v {
-			switch str := fmt.Sprint(v["key"]); true {
+			switch str := fmt.Sprint(v[key]); {
 			case strings.HasPrefix(key, "ide") && ValidateUuid(str):
 				drives = append(drives, str)
 			case strings.HasPrefix(key, "block") && ValidateUuid(str):

@@ -127,7 +127,8 @@ func (r *Report) PopulateReport(
 	driveLicenses *map[string]string,
 ) {
 	for _, s := range *servers {
-		for _, dl := range *driveLicenses {
+		for _, d := range s.Drives {
+			dl := (*driveLicenses)[d]
 			if dl == "" {
 				continue
 			}
